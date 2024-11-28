@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моніторинг рівня шуму</title>
+
+    <!-- Підключення стилів Leaflet.js для карти -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            margin: 20px auto;
+            border-radius: 10px;
+        }
+        #data {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 24px;
+            color: #333;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #ff5722;
+        }
+    </style>
+</head>
+<body>
+    <h1>Моніторинг рівня шуму</h1>
+    <div id="data">
+        <p><strong>Рівень шуму:</strong> <span id="noiseLevel" class="highlight">Завантаження...</span> дБ</p>
+    </div>
+
+    <!-- Карта буде тут -->
+    <div id="map"></div>
+
+    <!-- Підключення Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <!-- Підключення Leaflet.js для роботи з OpenStreetMap -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsRA9TQsCSyqhlMDDxL_O_jXFnOKcVYfI",
+            authDomain: "noisedetector-2d13c.firebaseapp.com",
+            databaseURL: "https://noisedetector-2d13c-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "noisedetector-2d13c",
+            storageBucket: "noisedetector-2d13c.appspot.com",
+            messagingSenderId: "436865738454",
+            appId: "1:436865738454:web:4240c437fd891b50030b77"
+        };
+
+        // Ініціалізація Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Ініціалізація карти OpenStreetMap з Leaflet.js
+        const map = L.map('map').setView([48.6226, 22.2876], 15);  // Початкові координати
+
+        // Додаємо tiles (шари карти) від OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Додаємо маркер на карту
+        const marker = L.marker([48.6226, 22.2876]).addTo(map);
+        marker.bindPopup("Завантаження...").openPopup();
+
+        // Оновлення рівня шуму
+        function updateNoiseLevel() {
+            database.ref("/noiseData").orderByChild("timestamp").limitToLast(1).on("value", (snapshot) => {
+                const data = snapshot.val();
+
+                if (data) {
+                    const timestamp = Object.keys(data)[0];
+                    const noiseLevel = data[timestamp].noiseLevel;
+                    const latitude = data[timestamp].latitude;
+                    const longitude = data[timestamp].longitude;
+
+                    // Оновлення рівня шуму на сторінці
+                    document.getElementById("noiseLevel").innerText = noiseLevel;
+
+                    // Оновлення маркера на карті
+                    marker.setLatLng([latitude, longitude]);
+                    marker.setPopupContent("Рівень шуму: " + noiseLevel + " дБ").openPopup();
+
+                    // Центруємо карту на нові координати
+                    map.setView([latitude, longitude]);
+                }
+            });
+        }
+
+        updateNoiseLevel(); // Початкове оновлення
+    </script>
+</body>
+</html>

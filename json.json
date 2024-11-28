@@ -1,0 +1,11 @@
+{
+    "noiseData": {
+      "sample1": {
+        "latitude": 50.4501,
+        "longitude": 30.5236,
+        "noiseLevel": 70,
+        "timestamp": "2024-11-27T12:00:00"
+      }
+    }
+  }
+  

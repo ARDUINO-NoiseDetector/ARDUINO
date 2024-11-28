@@ -1,0 +1,21 @@
+Google data
+
+login:arduinoproject2711@gmail.com
+password:Arduino2711
+
+Firebase data
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDsRA9TQsCSyqhlMDDxL_O_jXFnOKcVYfI",
+  authDomain: "noisedetector-2d13c.firebaseapp.com",
+  databaseURL: "https://noisedetector-2d13c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "noisedetector-2d13c",
+  storageBucket: "noisedetector-2d13c.firebasestorage.app",
+  messagingSenderId: "436865738454",
+  appId: "1:436865738454:web:4240c437fd891b50030b77"
+};
+
+
+Google apiKey
+
+AIzaSyDGb5QvGl5J_zTYakMua5hzDObk5wUvT1g
