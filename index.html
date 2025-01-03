@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Моніторинг рівня шуму</title>
 
-    <!-- Підключення стилів Leaflet.js для карти -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 
     <style>
@@ -46,18 +45,15 @@
         <p><strong>Рівень шуму:</strong> <span id="noiseLevel" class="highlight">Завантаження...</span> дБ</p>
     </div>
 
-    <!-- Карта буде тут -->
     <div id="map"></div>
 
-    <!-- Підключення Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-    <!-- Підключення Leaflet.js для роботи з OpenStreetMap -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
     <script>
-        // Конфігурація Firebase
+
         const firebaseConfig = {
             apiKey: "AIzaSyCCBnTOIwSZs-PnqoEfUuaJcLpNOHVc4zc",
             authDomain: "noisemonitor-3fe8f.firebaseapp.com",
@@ -68,49 +64,46 @@
             appId: "1:925124225828:web:9be033385ed059e8e421b1"
         };
 
-        // Ініціалізація Firebase
+
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // Ініціалізація карти OpenStreetMap з Leaflet.js
+
         const map = L.map('map').setView([48.6226, 22.2876], 15);  // Початкові координати
 
-        // Додаємо tiles (шари карти) від OpenStreetMap
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(map);
 
-        // Додаємо маркер на карту
+
         const marker = L.marker([48.6226, 22.2876]).addTo(map);
         marker.bindPopup("Завантаження...").openPopup();
 
-        // Оптимізація інтервалу запитів
+
         let lastUpdateTime = 0;
         const updateInterval = 500; // Інтервал оновлення в мілісекундах
 
-        // Оновлення рівня шуму
         function updateNoiseLevel() {
             const currentTime = Date.now();
             
-            // Оновлюємо дані не частіше ніж кожні 500 мс
+
             if (currentTime - lastUpdateTime > updateInterval) {
                 lastUpdateTime = currentTime;
 
-                // Підключення до Firebase та отримання рівня шуму
+
                 database.ref("/node1/noise").once("value", (snapshot) => {
                     if (snapshot.exists()) {
-                        const noiseLevel = snapshot.val(); // Отримуємо рівень шуму
-                        const latitude = 48.6226; // Вказати координати з Firebase або залишити дефолтні
-                        const longitude = 22.2876; // Вказати координати з Firebase або залишити дефолтні
+                        const noiseLevel = snapshot.val(); 
+                        const latitude = 48.6226; 
+                        const longitude = 22.2876; 
 
-                        // Оновлення рівня шуму на сторінці
                         document.getElementById("noiseLevel").innerText = noiseLevel;
 
-                        // Оновлення маркера на карті
                         marker.setPopupContent("Рівень шуму: " + noiseLevel + " дБ").openPopup();
 
-                        // Центруємо карту на нові координати
+
                         map.setView([latitude, longitude]);
                     } else {
                         console.log("Немає даних або відсутні оновлення.");
@@ -119,7 +112,7 @@
             }
         }
 
-        setInterval(updateNoiseLevel, 1000); // Оновлюємо рівень шуму кожну секунду
+        setInterval(updateNoiseLevel, 100); 
     </script>
 </body>
 </html>
