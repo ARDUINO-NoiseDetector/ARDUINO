@@ -41,8 +41,9 @@
     </style>
 </head>
 <body>
+    <h1>Моніторинг рівня шуму</h1>
     <div id="data">
-        <p><strong>Рівень шуму:</strong> <span id="noiseLevel" class="highlight">Завантаження...</span> </p>
+        <p><strong>Рівень шуму:</strong> <span id="noiseLevel" class="highlight">Завантаження...</span> дБ</p>
     </div>
 
     <!-- Карта буде тут -->
@@ -56,14 +57,15 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
     <script>
+        // Конфігурація Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyDsRA9TQsCSyqhlMDDxL_O_jXFnOKcVYfI",
-            authDomain: "noisedetector-2d13c.firebaseapp.com",
-            databaseURL: "https://noisedetector-2d13c-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "noisedetector-2d13c",
-            storageBucket: "noisedetector-2d13c.appspot.com",
-            messagingSenderId: "436865738454",
-            appId: "1:436865738454:web:4240c437fd891b50030b77"
+            apiKey: "AIzaSyCCBnTOIwSZs-PnqoEfUuaJcLpNOHVc4zc",
+            authDomain: "noisemonitor-3fe8f.firebaseapp.com",
+            databaseURL: "https://noisemonitor-3fe8f-default-rtdb.firebaseio.com",
+            projectId: "noisemonitor-3fe8f",
+            storageBucket: "noisemonitor-3fe8f.firebasestorage.app",
+            messagingSenderId: "925124225828",
+            appId: "1:925124225828:web:9be033385ed059e8e421b1"
         };
 
         // Ініціалізація Firebase
@@ -75,38 +77,49 @@
 
         // Додаємо tiles (шари карти) від OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
         }).addTo(map);
 
         // Додаємо маркер на карту
         const marker = L.marker([48.6226, 22.2876]).addTo(map);
         marker.bindPopup("Завантаження...").openPopup();
 
+        // Оптимізація інтервалу запитів
+        let lastUpdateTime = 0;
+        const updateInterval = 500; // Інтервал оновлення в мілісекундах
+
         // Оновлення рівня шуму
         function updateNoiseLevel() {
-            database.ref("/noiseData").orderByChild("timestamp").limitToLast(1).on("value", (snapshot) => {
-                const data = snapshot.val();
+            const currentTime = Date.now();
+            
+            // Оновлюємо дані не частіше ніж кожні 500 мс
+            if (currentTime - lastUpdateTime > updateInterval) {
+                lastUpdateTime = currentTime;
 
-                if (data) {
-                    const timestamp = Object.keys(data)[0];
-                    const noiseLevel = data[timestamp].noiseLevel;
-                    const latitude = data[timestamp].latitude;
-                    const longitude = data[timestamp].longitude;
+                // Підключення до Firebase та отримання рівня шуму
+                database.ref("/node1/noise").once("value", (snapshot) => {
+                    if (snapshot.exists()) {
+                        const noiseLevel = snapshot.val(); // Отримуємо рівень шуму
+                        const latitude = 48.6226; // Вказати координати з Firebase або залишити дефолтні
+                        const longitude = 22.2876; // Вказати координати з Firebase або залишити дефолтні
 
-                    // Оновлення рівня шуму на сторінці
-                    document.getElementById("noiseLevel").innerText = noiseLevel;
+                        // Оновлення рівня шуму на сторінці
+                        document.getElementById("noiseLevel").innerText = noiseLevel;
 
-                    // Оновлення маркера на карті
-                    marker.setLatLng([latitude, longitude]);
-                    marker.setPopupContent("Рівень шуму: " + noiseLevel + " дБ").openPopup();
+                        // Оновлення маркера на карті
+                        marker.setPopupContent("Рівень шуму: " + noiseLevel + " дБ").openPopup();
 
-                    // Центруємо карту на нові координати
-                    map.setView([latitude, longitude]);
-                }
-            });
+                        // Центруємо карту на нові координати
+                        map.setView([latitude, longitude]);
+                    } else {
+                        console.log("Немає даних або відсутні оновлення.");
+                    }
+                });
+            }
         }
 
-        updateNoiseLevel(); // Початкове оновлення
+        setInterval(updateNoiseLevel, 1000); // Оновлюємо рівень шуму кожну секунду
     </script>
 </body>
 </html>
