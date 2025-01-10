@@ -1,48 +1,53 @@
 <!DOCTYPE html>
 <html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Моніторинг рівня шуму</title>
-
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    />
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-        }
-        #map {
-            height: 500px;
-            width: 100%;
-            margin: 20px auto;
-            border-radius: 10px;
-        }
-        #data {
-            background-color: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-        p {
-            font-size: 24px;
-            color: #333;
-        }
-        .highlight {
-            font-weight: bold;
-            color: #ff5722;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 500px;
+        width: 100%;
+        margin: 20px auto;
+        border-radius: 10px;
+      }
+      #data {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        display: inline-block;
+        margin-bottom: 20px;
+      }
+      p {
+        font-size: 24px;
+        color: #333;
+      }
+      .highlight {
+        font-weight: bold;
+        color: #ff5722;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Моніторинг рівня шуму</h1>
     <div id="data">
-        <p><strong>Рівень шуму:</strong> <span id="noiseLevel" class="highlight">Завантаження...</span> дБ</p>
+      <p>
+        <strong>Рівень шуму:</strong>
+        <span id="noiseLevel" class="highlight">Завантаження...</span> дБ
+      </p>
     </div>
 
     <div id="map"></div>
@@ -53,66 +58,59 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
     <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyCCBnTOIwSZs-PnqoEfUuaJcLpNOHVc4zc",
+        authDomain: "noisemonitor-3fe8f.firebaseapp.com",
+        databaseURL: "https://noisemonitor-3fe8f-default-rtdb.firebaseio.com",
+        projectId: "noisemonitor-3fe8f",
+        storageBucket: "noisemonitor-3fe8f.firebasestorage.app",
+        messagingSenderId: "925124225828",
+        appId: "1:925124225828:web:9be033385ed059e8e421b1",
+      };
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCCBnTOIwSZs-PnqoEfUuaJcLpNOHVc4zc",
-            authDomain: "noisemonitor-3fe8f.firebaseapp.com",
-            databaseURL: "https://noisemonitor-3fe8f-default-rtdb.firebaseio.com",
-            projectId: "noisemonitor-3fe8f",
-            storageBucket: "noisemonitor-3fe8f.firebasestorage.app",
-            messagingSenderId: "925124225828",
-            appId: "1:925124225828:web:9be033385ed059e8e421b1"
-        };
+      firebase.initializeApp(firebaseConfig);
+      const database = firebase.database();
 
+      const map = L.map("map").setView([48.6226, 22.2876], 15);
 
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19,
+      }).addTo(map);
 
+      const marker = L.marker([48.6243910085551, 22.290401741430877]).addTo(map);
+      marker.bindPopup("Завантаження...").openPopup();
 
-        const map = L.map('map').setView([48.6226, 22.2876], 15);  // Початкові координати
+      let lastUpdateTime = 0;
+      const updateInterval = 500;
 
+      function updateNoiseLevel() {
+        const currentTime = Date.now();
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(map);
+        if (currentTime - lastUpdateTime > updateInterval) {
+          lastUpdateTime = currentTime;
 
+          database.ref("/node1/noise").once("value", (snapshot) => {
+            if (snapshot.exists()) {
+              const noiseLevel = snapshot.val(); // Отримуємо рівень шуму
+              const latitude = 48.6243910085551; // Вказати координати з Firebase або залишити дефолтні
+              const longitude = 22.290401741430877; // Вказати координати з Firebase або залишити дефолтні
 
-        const marker = L.marker([48.6243910085551, 22.290401741430877]).addTo(map);
-        marker.bindPopup("Завантаження...").openPopup();
+              document.getElementById("noiseLevel").innerText = noiseLevel;
 
+              marker
+                .setPopupContent("Рівень шуму: " + noiseLevel + " дБ")
+                .openPopup();
 
-        let lastUpdateTime = 0;
-        const updateInterval = 500; // Інтервал оновлення в мілісекундах
-
-        function updateNoiseLevel() {
-            const currentTime = Date.now();
-            
-
-            if (currentTime - lastUpdateTime > updateInterval) {
-                lastUpdateTime = currentTime;
-
-
-                database.ref("/node1/noise").once("value", (snapshot) => {
-                    if (snapshot.exists()) {
-                        const noiseLevel = snapshot.val(); 
-                        const latitude = 48.6243910085551,; 
-                        const longitude = 22.290401741430877; 
-
-                        document.getElementById("noiseLevel").innerText = noiseLevel;
-
-                        marker.setPopupContent("Рівень шуму: " + noiseLevel + " дБ").openPopup();
-
-
-                        map.setView([latitude, longitude]);
-                    } else {
-                        console.log("Немає даних або відсутні оновлення.");
-                    }
-                });
+              map.setView([latitude, longitude]);
+            } else {
+              console.log("Немає даних або відсутні оновлення.");
             }
+          });
         }
+      }
 
-        setInterval(updateNoiseLevel, 100); 
+      setInterval(updateNoiseLevel, 100);
     </script>
-</body>
+  </body>
 </html>
