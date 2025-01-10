@@ -78,7 +78,7 @@
         }).addTo(map);
 
 
-        const marker = L.marker([48.6226, 22.2876]).addTo(map);
+        const marker = L.marker([48.6243910085551, 22.290401741430877]).addTo(map);
         marker.bindPopup("Завантаження...").openPopup();
 
 
@@ -96,8 +96,8 @@
                 database.ref("/node1/noise").once("value", (snapshot) => {
                     if (snapshot.exists()) {
                         const noiseLevel = snapshot.val(); 
-                        const latitude = 48.6226; 
-                        const longitude = 22.2876; 
+                        const latitude = 48.6243910085551,; 
+                        const longitude = 22.290401741430877; 
 
                         document.getElementById("noiseLevel").innerText = noiseLevel;
 
