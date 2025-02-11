@@ -8,7 +8,6 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
     />
-
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -49,12 +48,10 @@
         <span id="noiseLevel" class="highlight">Завантаження...</span> дБ
       </p>
     </div>
-
     <div id="map"></div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
     <script>
@@ -72,45 +69,43 @@
       const database = firebase.database();
 
       const map = L.map("map").setView([48.6226, 22.2876], 15);
-
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 19,
       }).addTo(map);
 
-      const marker = L.marker([48.6243910085551, 22.290401741430877]).addTo(map);
-      marker.bindPopup("Завантаження...").openPopup();
-
-      let lastUpdateTime = 0;
-      const updateInterval = 500;
-
-      function updateNoiseLevel() {
-        const currentTime = Date.now();
-
-        if (currentTime - lastUpdateTime > updateInterval) {
-          lastUpdateTime = currentTime;
-
-          database.ref("/node1/noise").once("value", (snapshot) => {
-            if (snapshot.exists()) {
-              const noiseLevel = snapshot.val(); // Отримуємо рівень шуму
-              const latitude = 48.6243910085551; // Вказати координати з Firebase або залишити дефолтні
-              const longitude = 22.290401741430877; // Вказати координати з Firebase або залишити дефолтні
-
-              document.getElementById("noiseLevel").innerText = noiseLevel;
-
-              marker
-                .setPopupContent("Рівень шуму: " + noiseLevel + " дБ")
-                .openPopup();
-
-              map.setView([latitude, longitude]);
-            } else {
-              console.log("Немає даних або відсутні оновлення.");
-            }
-          });
-        }
+      function getMarkerColor(noiseLevel) {
+        if (noiseLevel < 40) return "green";
+        if (noiseLevel >= 40 && noiseLevel <= 55) return "yellow";
+        return "red";
       }
 
-      setInterval(updateNoiseLevel, 100);
+      let marker = L.circleMarker([48.6243910085551, 22.290401741430877], {
+        radius: 10,
+        color: "green",
+        fillColor: "green",
+        fillOpacity: 1,
+      }).addTo(map);
+
+      marker.bindPopup("Завантаження...").openPopup();
+
+      function updateNoiseLevel() {
+        database.ref("/node1/noise").once("value", (snapshot) => {
+          if (snapshot.exists()) {
+            const noiseLevel = snapshot.val();
+            document.getElementById("noiseLevel").innerText = noiseLevel;
+
+            let newColor = getMarkerColor(noiseLevel);
+            marker.setStyle({ color: newColor, fillColor: newColor });
+
+            marker
+              .setPopupContent("Рівень шуму: " + noiseLevel + " дБ")
+              .openPopup();
+          }
+        });
+      }
+
+      setInterval(updateNoiseLevel, 1000);
     </script>
   </body>
 </html>
