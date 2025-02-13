@@ -8,6 +8,7 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
     />
+
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -38,6 +39,40 @@
         font-weight: bold;
         color: #ff5722;
       }
+
+      .legend {
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        font-size: 14px;
+        line-height: 18px;
+        text-align: left;
+      }
+
+      .legend h4 {
+        margin: 0;
+        padding-bottom: 5px;
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      .legend i {
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .legend div {
+        display: flex;
+        margin-bottom: 10px;
+      }
+
+      .legend span {
+        vertical-align: middle;
+      }
     </style>
   </head>
   <body>
@@ -48,10 +83,12 @@
         <span id="noiseLevel" class="highlight">Завантаження...</span> дБ
       </p>
     </div>
+
     <div id="map"></div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
     <script>
@@ -68,44 +105,93 @@
       firebase.initializeApp(firebaseConfig);
       const database = firebase.database();
 
+      // Initialize the map
       const map = L.map("map").setView([48.6226, 22.2876], 15);
+
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 19,
       }).addTo(map);
 
-      function getMarkerColor(noiseLevel) {
-        if (noiseLevel < 40) return "green";
-        if (noiseLevel >= 40 && noiseLevel <= 55) return "yellow";
-        return "red";
-      }
+      // Default location (Can be updated from Firebase later)
+      const defaultLat = 48.6226;
+      const defaultLng = 22.2876;
 
-      let marker = L.circleMarker([48.6243910085551, 22.290401741430877], {
-        radius: 10,
-        color: "green",
-        fillColor: "green",
-        fillOpacity: 1,
+      // Add a circle marker instead of a regular marker
+      let circleMarker = L.circleMarker([defaultLat, defaultLng], {
+        radius: 10, // Default size
+        color: "#008000", // Default green color
+        fillColor: "#008000",
+        fillOpacity: 0.6,
       }).addTo(map);
 
-      marker.bindPopup("Завантаження...").openPopup();
+      let lastUpdateTime = 0;
+      const updateInterval = 500;
 
       function updateNoiseLevel() {
-        database.ref("/node1/noise").once("value", (snapshot) => {
-          if (snapshot.exists()) {
-            const noiseLevel = snapshot.val();
-            document.getElementById("noiseLevel").innerText = noiseLevel;
+        const currentTime = Date.now();
 
-            let newColor = getMarkerColor(noiseLevel);
-            marker.setStyle({ color: newColor, fillColor: newColor });
+        if (currentTime - lastUpdateTime > updateInterval) {
+          lastUpdateTime = currentTime;
 
-            marker
-              .setPopupContent("Рівень шуму: " + noiseLevel + " дБ")
-              .openPopup();
-          }
-        });
+          database.ref("/node1/noise").once("value", (snapshot) => {
+            if (snapshot.exists()) {
+              const noiseLevel = snapshot.val(); // Get noise level
+              document.getElementById("noiseLevel").innerText = noiseLevel;
+
+              // Define noise level thresholds
+              let color = "#008000"; // Green (Low noise)
+              let radius = 10; // Default size
+
+              if (noiseLevel >= 50 && noiseLevel < 70) {
+                color = "#ffcc00"; // Yellow (Moderate noise)
+                radius = 15;
+              } else if (noiseLevel >= 70 && noiseLevel < 85) {
+                color = "#ff6600"; // Orange (High noise)
+                radius = 20;
+              } else if (noiseLevel >= 85) {
+                color = "#ff0000"; // Red (Very high noise)
+                radius = 25;
+              }
+
+              // Update the circle marker properties dynamically
+              circleMarker.setLatLng([defaultLat, defaultLng]); // Set position
+              circleMarker.setStyle({
+                color: color,
+                fillColor: color,
+                radius: radius,
+              });
+
+              // Update the popup with noise level info
+              circleMarker.bindPopup(`Рівень шуму: ${noiseLevel} дБ`).openPopup();
+            } else {
+              console.log("Немає даних або відсутні оновлення.");
+            }
+          });
+        }
       }
 
-      setInterval(updateNoiseLevel, 1000);
+      // Update every 100ms (with a 500ms limit)
+      setInterval(updateNoiseLevel, 100);
+
+      // Add a legend with background color and aligned items
+      const legend = L.control({ position: "bottomright" });
+
+      legend.onAdd = function (map) {
+        const div = L.DomUtil.create("div","legend");
+        div.innerHTML += "<h4>Рівень шуму (дБ)</h4>";
+        div.innerHTML +=
+          '<div><i style="background: #008000;"></i> <span>< 50 (Низький)</span></div>';
+        div.innerHTML +=
+          '<div><i style="background: #ffcc00;"></i> <span>50 - 69 (Помірний)</span></div>';
+        div.innerHTML +=
+          '<div><i style="background: #ff6600;"></i> <span>70 - 84 (Високий)</span></div>';
+        div.innerHTML +=
+          '<div><i style="background: #ff0000;"></i> <span>≥ 85 (Дуже високий)</span></div>';
+        return div;
+      };
+
+      legend.addTo(map);
     </script>
   </body>
 </html>
